@@ -128,7 +128,7 @@ class BagNet(nn.Module):
         else:
             x = x.permute(0,2,3,1)
         x = self.fc(x)
-        return x, a
+        return x
 
 def bagnet33(pretrained=False, strides=[2, 2, 2, 1], **kwargs):
     """Constructs a Bagnet-33 model.

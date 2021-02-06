@@ -34,3 +34,4 @@ python main.py --mode test --dataset CelebA --image_size 128 --c_dim 5 \
 ## Reference
 1. The code is based on [StarGAN](https://github.com/yunjey/StarGAN).
 2. https://arxiv.org/abs/1912.03085
+3. https://github.com/wielandbrendel/bag-of-local-features-models
