@@ -3,7 +3,7 @@
 ***This is an ongoing unofficial implementation.***
 
 ## Dependencies
-`pip install -F requirements.txt`
+`pip install -r requirements.txt`
 
 ## Datasets
 ### CelebA
