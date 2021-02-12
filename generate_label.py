@@ -30,14 +30,13 @@ def images2features(image_list, batch_size=32):
             yield image_list[i:i + batch_size]
 
     for batch_image_list in batch_generator():
-        images = []
-        for image_path in batch_image_list:
-            image = Image.open(image_path)
+        tensors = torch.Tensor(len(batch_image_list), 3, image_size, image_size)
+        for i in range(len(batch_image_list)):
+            image = Image.open(batch_image_list[i])
             image = transform(image)
-            images.append(image)
-        tensors = torch.Tensor(len(images), 3, image_size, image_size)
-        torch.cat(images, out=tensors)
-        images = extractor(tensors)
+            tensors[i] = image
+        # the input shape should be (N,C,H,W)
+        images = extractor(tensors.cuda())
         features.extend(images)
     features = np.array(features)
     return features
