@@ -7,6 +7,8 @@ from pretrained import bagnet
 from torchvision import transforms as T
 from PIL import Image
 from sklearn.cluster import KMeans
+from tqdm import tqdm
+import math
 
 
 def get_image_list(image_dir):
@@ -29,7 +31,7 @@ def images2features(image_list, batch_size=32):
         for i in range(0, len(image_list), batch_size):
             yield image_list[i:i + batch_size]
 
-    for batch_image_list in batch_generator():
+    for batch_image_list in tqdm(batch_generator(), total=math.ceil(len(image_list) / batch_size)):
         tensors = torch.Tensor(len(batch_image_list), 3, image_size, image_size)
         for i in range(len(batch_image_list)):
             image = Image.open(batch_image_list[i])
@@ -37,7 +39,8 @@ def images2features(image_list, batch_size=32):
             tensors[i] = image
         # the input shape should be (N,C,H,W)
         images = extractor(tensors.cuda())
-        features.extend(images)
+        features.extend(images.cpu().detach().numpy())
+        del tensors, images
     features = np.array(features)
     return features
 
@@ -56,6 +59,7 @@ def main(config):
     images_list = get_image_list(config.dataset_path)
     print(f"images num: {len(images_list)}")
     features = images2features(images_list, config.batch_size)
+    np.savez(config.save_path + "/features.npz", features)
     print("all images processed")
     print("start clustering")
     centers, labels = cluster_features(features, config.num_cluster)

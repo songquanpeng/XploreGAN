@@ -11,6 +11,10 @@ https://www.dropbox.com/s/d1kjpkqklf0uw77/celeba.zip
 
 ## Training & Testing (Need update)
 ```sh
+# Generate labels
+python generate_label.py --dataset_path D:\Research\Data\celeba\images 
+                         --batch_size 32
+
 # Train StarGAN using the CelebA dataset
 python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 \
                --sample_dir stargan_celeba/samples --log_dir stargan_celeba/logs \
