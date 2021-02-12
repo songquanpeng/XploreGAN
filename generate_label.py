@@ -9,6 +9,8 @@ from PIL import Image
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 import math
+import random
+import datetime
 
 
 def get_image_list(image_dir):
@@ -53,18 +55,23 @@ def cluster_features(features, n_clusters, random_state=None):
 
 
 def main(config):
+    print("start at: "+datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    if config.debug:
+        print("Running in debug mode!")
     cudnn.benchmark = True
     if not os.path.exists(config.save_path):
         os.makedirs(config.save_path)
     images_list = get_image_list(config.dataset_path)
+    if config.debug:
+        images_list = random.sample(images_list, 100)
     print(f"images num: {len(images_list)}")
     features = images2features(images_list, config.batch_size)
     np.savez(config.save_path + "/features.npz", features)
     print("all images processed")
     print("start clustering")
     centers, labels = cluster_features(features, config.num_cluster)
-    print("done")
-    print(centers)
+    np.savez(config.save_path + "/clusters.npz", centers=centers, labels=labels)
+    print("end at: "+datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 
 if __name__ == '__main__':
@@ -73,7 +80,8 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_path', type=str, default='./data/celeba/')
     parser.add_argument('--num_cluster', type=int, default=40, help='number of cluster')
     parser.add_argument('--batch_size', type=int, default=16)
-    parser.add_argument('--save_path', type=str, default='./data/celeba/generated_labels')
+    parser.add_argument('--save_path', type=str, default='./data/celeba/generated')
+    parser.add_argument('--debug', type=bool, default=False)
     cfg = parser.parse_args()
     print(cfg)
     main(cfg)
