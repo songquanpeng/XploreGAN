@@ -44,12 +44,12 @@ if __name__ == '__main__':
     parser.add_argument('--cluster_path', type=str, default='./data/celeba/generated/clusters.npz')
     parser.add_argument('--images_path', type=str, default=r"D:\Research\Data\celeba\images")
     parser.add_argument('--output_path', type=str, default="./data/celeba/generated")
-    parser.add_argument('--n', type=int, default=5)
+    parser.add_argument('--n', type=int, default=5, help="n*n is the shown images per label")
     cfg = parser.parse_args()
     print(cfg)
     images_path = cfg.images_path
     output_path = cfg.output_path
     cluster = np.load(cfg.cluster_path)
     labels = cluster["labels"]
-    for i in tqdm(range(40)):
+    for i in tqdm(range(np.max(labels) + 1)):
         show_images(i, cfg.n)

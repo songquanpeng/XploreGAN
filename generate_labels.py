@@ -7,6 +7,8 @@ from pretrained import bagnet
 from torchvision import transforms as T
 from PIL import Image
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import normalize
 from tqdm import tqdm
 import math
 import random
@@ -47,13 +49,6 @@ def images2features(image_list, batch_size=32):
     return features
 
 
-def cluster_features(features, n_clusters, random_state=None):
-    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, max_iter=3000)
-    kmeans.fit(features)
-    print(f"Loss: {kmeans.inertia_}")
-    return kmeans.cluster_centers_, kmeans.labels_
-
-
 def generate_features(config):
     if not os.path.exists(config.save_path):
         os.makedirs(config.save_path)
@@ -62,8 +57,23 @@ def generate_features(config):
         images_list = random.sample(images_list, 100)
     print(f"Images num: {len(images_list)}")
     features = images2features(images_list, config.batch_size)
-    np.savez(config.save_path + "/features.npz", features)
     return features
+
+
+def process_features(features, pca_dim=256):
+    # L2 normalize
+    features = normalize(features, norm='l2')
+    # PCA
+    pca = PCA(n_components=pca_dim)
+    features = pca.fit_transform(features)
+    return features
+
+
+def cluster_features(features, n_clusters, random_state=None):
+    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, max_iter=3000)
+    kmeans.fit(features)
+    print(f"Loss: {kmeans.inertia_}")
+    return kmeans.cluster_centers_, kmeans.labels_
 
 
 def main(config):
@@ -71,12 +81,21 @@ def main(config):
     if config.debug:
         print("Running in debug mode.")
     cudnn.benchmark = True
-    if config.features_clustered or config.features_calculated:
+    if config.features_generated:
         features = np.load(config.save_path + "/features.npz")["arr_0"]
     else:
-        print("Start calculating.")
+        print("Start generating.")
         features = generate_features(config)
-    print("Features loading done.")
+        np.savez(config.save_path + "/features.npz", features)
+    print("Features generated.")
+
+    if config.features_processed:
+        processed_features = np.load(config.save_path + "/processed_features.npz")["arr_0"]
+    else:
+        print("Start processing.")
+        processed_features = process_features(features, config.pca_dim)
+        np.savez(config.save_path + "/processed_features.npz", processed_features)
+    print("Features processed.")
 
     if config.features_clustered:
         clusters = np.load(config.save_path + "/clusters.npz")
@@ -84,8 +103,8 @@ def main(config):
         labels = clusters["labels"]
     else:
         print("Start clustering.")
-        centers, labels = cluster_features(features, config.num_cluster)
-    print("Clusters loading done.")
+        centers, labels = cluster_features(processed_features, config.num_cluster)
+    print("Features clustered.")
 
     clusters = [[] for _ in range(config.num_cluster)]
     for i in range(len(labels)):
@@ -104,10 +123,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='CelebA', choices=['CelebA', 'RaFD', 'Both'])
     parser.add_argument('--dataset_path', type=str, default='./data/celeba/')
-    parser.add_argument('--num_cluster', type=int, default=40, help='number of cluster')
+    parser.add_argument('--num_cluster', type=int, default=100, help='used in kmeans, 100 for 128x128, 50 for 256x256')
+    parser.add_argument('--pca_dim', type=int, default=256)
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--save_path', type=str, default='./data/celeba/generated')
-    parser.add_argument('--features_calculated', type=bool, default=False)
+    parser.add_argument('--features_generated', type=bool, default=False)
+    parser.add_argument('--features_processed', type=bool, default=False)
     parser.add_argument('--features_clustered', type=bool, default=False)
     parser.add_argument('--debug', type=bool, default=False)
     cfg = parser.parse_args()
