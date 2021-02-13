@@ -13,6 +13,7 @@ from tqdm import tqdm
 import math
 import random
 import time
+import faiss
 
 
 def get_image_list(image_dir):
@@ -69,11 +70,19 @@ def process_features(features, pca_dim=256):
     return features
 
 
-def cluster_features(features, n_clusters, random_state=None):
-    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, max_iter=3000)
-    kmeans.fit(features)
-    print(f"Loss: {kmeans.inertia_}")
-    return kmeans.cluster_centers_, kmeans.labels_
+def cluster_features(features, n_clusters, implementation, faiss_gpu=False, max_iter=3000, random_state=None):
+    if implementation == "sklearn":
+        kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, max_iter=max_iter)
+        kmeans.fit(features)
+        print(f"Loss: {kmeans.inertia_}")
+        return kmeans.cluster_centers_, kmeans.labels_
+    elif implementation == "faiss":
+        kmeans = faiss.Kmeans(features.shape[1], n_clusters, niter=max_iter, gpu=faiss_gpu)
+        kmeans.train(features)
+        _, I = kmeans.index.search(features, 1)
+        return kmeans.centroids, I.reshape(I.shape[0])
+    else:
+        print(f"No such kmeans implementation {implementation} available.")
 
 
 def main(config):
@@ -81,7 +90,7 @@ def main(config):
     if config.debug:
         print("Running in debug mode.")
     cudnn.benchmark = True
-    if config.features_generated:
+    if config.features_clustered or config.features_processed or config.features_generated:
         features = np.load(config.save_path + "/features.npz")["arr_0"]
     else:
         print("Start generating.")
@@ -89,7 +98,7 @@ def main(config):
         np.savez(config.save_path + "/features.npz", features)
     print("Features generated.")
 
-    if config.features_processed:
+    if config.features_clustered or config.features_processed:
         processed_features = np.load(config.save_path + "/processed_features.npz")["arr_0"]
     else:
         print("Start processing.")
@@ -103,7 +112,7 @@ def main(config):
         labels = clusters["labels"]
     else:
         print("Start clustering.")
-        centers, labels = cluster_features(processed_features, config.num_cluster)
+        centers, labels = cluster_features(processed_features, config.num_cluster, config.kmeans)
     print("Features clustered.")
 
     clusters = [[] for _ in range(config.num_cluster)]
@@ -131,6 +140,8 @@ if __name__ == '__main__':
     parser.add_argument('--features_processed', type=bool, default=False)
     parser.add_argument('--features_clustered', type=bool, default=False)
     parser.add_argument('--debug', type=bool, default=False)
+    parser.add_argument('--kmeans', type=str, default='faiss', choices=['faiss', 'sklearn'])
+    parser.add_argument('--faiss_gpu', type=bool, default=False)
     cfg = parser.parse_args()
     print(cfg)
     main(cfg)

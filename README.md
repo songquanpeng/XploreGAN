@@ -5,10 +5,21 @@
 Current progress:
 + [x] Generate the pseudo labels.
 + [x] Verify the cluster results.
++ [ ] Modify the dataloader.
 + [ ] Implement the proposed model.
 
 ## Dependencies
-`pip install -r requirements.txt`
+```shell script
+pip install -r requirements.txt
+
+# Install faiss (optional)
+# CPU version only
+conda install faiss-cpu -c pytorch
+
+# GPU version
+conda install faiss-gpu cudatoolkit=10.0 -c pytorch # For CUDA10
+
+```
 
 ## Datasets
 ### CelebA
@@ -18,7 +29,7 @@ https://www.dropbox.com/s/d1kjpkqklf0uw77/celeba.zip
 ```sh
 # Generate labels
 python generate_labels.py --dataset_path D:\Research\Data\celeba\images 
-                         --batch_size 32
+                          --batch_size 32
 
 # Inspect generated labels
 python inspect_labels.py
