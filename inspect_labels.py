@@ -14,7 +14,7 @@ def load_image(index):
     return Image.open(path)
 
 
-def show_images(label, display=False, n=5):
+def show_images(label, n=5, display=False):
     num = n * n
     images = []
     for i in range(len(labels)):
@@ -44,11 +44,12 @@ if __name__ == '__main__':
     parser.add_argument('--cluster_path', type=str, default='./data/celeba/generated/clusters.npz')
     parser.add_argument('--images_path', type=str, default=r"D:\Research\Data\celeba\images")
     parser.add_argument('--output_path', type=str, default="./data/celeba/generated")
+    parser.add_argument('--n', type=int, default=5)
     cfg = parser.parse_args()
     print(cfg)
     images_path = cfg.images_path
     output_path = cfg.output_path
     cluster = np.load(cfg.cluster_path)
     labels = cluster["labels"]
-    for label in tqdm(range(40)):
-        show_images(label)
+    for i in tqdm(range(40)):
+        show_images(i, cfg.n)
