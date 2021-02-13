@@ -5,22 +5,23 @@ from PIL import Image
 import torch
 import os
 import random
+import numpy as np
 
 
 class CelebA(data.Dataset):
     """Dataset class for the CelebA dataset."""
 
-    def __init__(self, image_dir, attr_path, selected_attrs, transform, mode):
+    def __init__(self, cluster_npz_path, transform, mode):
         """Initialize and preprocess the CelebA dataset."""
-        self.image_dir = image_dir
-        self.attr_path = attr_path
-        self.selected_attrs = selected_attrs
         self.transform = transform
         self.mode = mode
         self.train_dataset = []
         self.test_dataset = []
-        self.attr2idx = {}
-        self.idx2attr = {}
+        clusters = np.load(cluster_npz_path)
+        self.centers = clusters["centers"]
+        self.labels = clusters["labels"]
+        self.stds = clusters["stds"]
+        self.image_paths = clusters["image_paths"]
         self.preprocess()
 
         if mode == 'train':
@@ -29,38 +30,19 @@ class CelebA(data.Dataset):
             self.num_images = len(self.test_dataset)
 
     def preprocess(self):
-        """Preprocess the CelebA attribute file."""
-        lines = [line.rstrip() for line in open(self.attr_path, 'r')]
-        all_attr_names = lines[1].split()
-        for i, attr_name in enumerate(all_attr_names):
-            self.attr2idx[attr_name] = i
-            self.idx2attr[i] = attr_name
-
-        lines = lines[2:]
+        images = [(self.image_paths[i], label) for i, label in enumerate(self.labels)]
         random.seed(1234)
-        random.shuffle(lines)
-        for i, line in enumerate(lines):
-            split = line.split()
-            filename = split[0]
-            values = split[1:]
-
-            label = []
-            for attr_name in self.selected_attrs:
-                idx = self.attr2idx[attr_name]
-                label.append(values[idx] == '1')
-
-            if (i+1) < 2000:
-                self.test_dataset.append([filename, label])
-            else:
-                self.train_dataset.append([filename, label])
-
-        print('Finished preprocessing the CelebA dataset...')
+        random.shuffle(images)
+        self.test_dataset = images[:2000]
+        self.train_dataset = images[2000:]
+        print('Dataset processed.')
 
     def __getitem__(self, index):
         """Return one image and its corresponding attribute label."""
         dataset = self.train_dataset if self.mode == 'train' else self.test_dataset
-        filename, label = dataset[index]
-        image = Image.open(os.path.join(self.image_dir, filename))
+        path, label = dataset[index]
+        label = [label]
+        image = Image.open(path)
         return self.transform(image), torch.FloatTensor(label)
 
     def __len__(self):
@@ -68,7 +50,7 @@ class CelebA(data.Dataset):
         return self.num_images
 
 
-def get_loader(image_dir, attr_path, selected_attrs, crop_size=178, image_size=128, 
+def get_loader(cluster_npz_path, crop_size=178, image_size=128,
                batch_size=16, dataset='CelebA', mode='train', num_workers=1):
     """Build and return a data loader."""
     transform = []
@@ -81,12 +63,12 @@ def get_loader(image_dir, attr_path, selected_attrs, crop_size=178, image_size=1
     transform = T.Compose(transform)
 
     if dataset == 'CelebA':
-        dataset = CelebA(image_dir, attr_path, selected_attrs, transform, mode)
-    elif dataset == 'RaFD':
-        dataset = ImageFolder(image_dir, transform)
+        dataset = CelebA(cluster_npz_path, transform, mode)
+    # elif dataset == 'RaFD':
+    #     dataset = ImageFolder(image_dir, transform)
 
     data_loader = data.DataLoader(dataset=dataset,
                                   batch_size=batch_size,
-                                  shuffle=(mode=='train'),
+                                  shuffle=(mode == 'train'),
                                   num_workers=num_workers)
     return data_loader

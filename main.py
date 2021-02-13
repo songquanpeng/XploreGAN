@@ -5,9 +5,6 @@ from data_loader import get_loader
 from torch.backends import cudnn
 
 
-def str2bool(v):
-    return v.lower() in ('true')
-
 def main(config):
     # For fast training.
     cudnn.benchmark = True
@@ -27,28 +24,21 @@ def main(config):
     rafd_loader = None
 
     if config.dataset in ['CelebA', 'Both']:
-        celeba_loader = get_loader(config.celeba_image_dir, config.attr_path, config.selected_attrs,
+        celeba_loader = get_loader(config.cluster_npz_path,
                                    config.celeba_crop_size, config.image_size, config.batch_size,
                                    'CelebA', config.mode, config.num_workers)
-    if config.dataset in ['RaFD', 'Both']:
-        rafd_loader = get_loader(config.rafd_image_dir, None, None,
-                                 config.rafd_crop_size, config.image_size, config.batch_size,
-                                 'RaFD', config.mode, config.num_workers)
-    
+    # if config.dataset in ['RaFD', 'Both']:
+    #     rafd_loader = get_loader(config.rafd_image_dir, None, None,
+    #                              config.rafd_crop_size, config.image_size, config.batch_size,
+    #                              'RaFD', config.mode, config.num_workers)
 
     # Solver for training and testing StarGAN.
     solver = Solver(celeba_loader, rafd_loader, config)
 
     if config.mode == 'train':
-        if config.dataset in ['CelebA', 'RaFD']:
-            solver.train()
-        elif config.dataset in ['Both']:
-            solver.train_multi()
+        solver.train()
     elif config.mode == 'test':
-        if config.dataset in ['CelebA', 'RaFD']:
-            solver.test()
-        elif config.dataset in ['Both']:
-            solver.test_multi()
+        solver.test()
 
 
 if __name__ == '__main__':
@@ -67,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--lambda_cls', type=float, default=1, help='weight for domain classification loss')
     parser.add_argument('--lambda_rec', type=float, default=10, help='weight for reconstruction loss')
     parser.add_argument('--lambda_gp', type=float, default=10, help='weight for gradient penalty')
-    
+
     # Training configuration.
     parser.add_argument('--dataset', type=str, default='CelebA', choices=['CelebA', 'RaFD', 'Both'])
     parser.add_argument('--batch_size', type=int, default=16, help='mini-batch size')
@@ -88,10 +78,10 @@ if __name__ == '__main__':
     # Miscellaneous.
     parser.add_argument('--num_workers', type=int, default=1)
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
-    parser.add_argument('--use_tensorboard', type=str2bool, default=True)
+    parser.add_argument('--use_tensorboard', type=bool, default=True)
 
     # Directories.
-    parser.add_argument('--celeba_image_dir', type=str, default='data/celeba/images')
+    parser.add_argument('--cluster_npz_path', type=str, default='data/celeba/generated/clusters.npz')
     parser.add_argument('--attr_path', type=str, default='data/celeba/list_attr_celeba.txt')
     parser.add_argument('--rafd_image_dir', type=str, default='data/RaFD/train')
     parser.add_argument('--log_dir', type=str, default='experiment/logs')

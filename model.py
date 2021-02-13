@@ -20,7 +20,17 @@ class ResidualBlock(nn.Module):
 
 
 class Generator(nn.Module):
-    """Generator network."""
+    """
+    Adapted from StarGAN [4], our encoder
+    has two convolutional layers for downsampling followed
+    by six residual blocks [14] with spectral normalization
+    [28]. Our decoder has six residual blocks with attribute
+    summary instance normalization (ASIN), with per pixel
+    noise [21] added after each convolutional layer. It is
+    followed by two transposed convolutional layers for upsampling.
+    We also adopt stochastic variation [21] to increase
+    generation performance on fine, stochastic details of the image.
+    """
     def __init__(self, conv_dim=64, c_dim=5, repeat_num=6):
         super(Generator, self).__init__()
 
@@ -63,7 +73,10 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    """Discriminator network with PatchGAN."""
+    """
+    For the discriminator, we use PatchGANs [24, 18, 43]
+    to classify whether image patches are real or fake.
+    """
     def __init__(self, image_size=128, conv_dim=64, c_dim=5, repeat_num=6):
         super(Discriminator, self).__init__()
         layers = []

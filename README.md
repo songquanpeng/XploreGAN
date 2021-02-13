@@ -25,28 +25,24 @@ conda install faiss-gpu cudatoolkit=10.0 -c pytorch # For CUDA10
 ### CelebA
 https://www.dropbox.com/s/d1kjpkqklf0uw77/celeba.zip
 
-## Training & Testing (Need update)
+## Training & Testing
 ```sh
-# Generate labels
-python generate_labels.py --dataset_path D:\Research\Data\celeba\images 
+# Generate pseudo labels
+python generate_labels.py --dataset_path D:\Research\Data\celeba\images \
                           --batch_size 32
 
-# Inspect generated labels
+# Inspect pseudo labels
 python inspect_labels.py
 
-# Train StarGAN using the CelebA dataset
+# Train with the CelebA dataset
 python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 \
-               --sample_dir stargan_celeba/samples --log_dir stargan_celeba/logs \
-               --model_save_dir stargan_celeba/models --result_dir stargan_celeba/results \
-               --selected_attrs Black_Hair Blond_Hair Brown_Hair Male Young
+               --cluster_npz_path data/celeba/generated/clusters.npz
 
-# Test StarGAN using the CelebA dataset
+# Test with the CelebA dataset
 python main.py --mode test --dataset CelebA --image_size 128 --c_dim 5 \
-               --sample_dir stargan_celeba/samples --log_dir stargan_celeba/logs \
-               --model_save_dir stargan_celeba/models --result_dir stargan_celeba/results \
-               --selected_attrs Black_Hair Blond_Hair Brown_Hair Male Young
+               --cluster_npz_path data/celeba/generated/clusters.npz
 
-# Use pre-trainged network
+# Use the pre-trainged network
 python main.py --mode test --dataset CelebA --image_size 128 --c_dim 5 \
                --selected_attrs Black_Hair Blond_Hair Brown_Hair Male Young \
                --model_save_dir='stargan_celeba_128/models' \

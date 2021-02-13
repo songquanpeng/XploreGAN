@@ -11,7 +11,15 @@ import datetime
 
 
 class Solver(object):
-    """Solver for training and testing StarGAN."""
+    """Solver for training and testing StarGAN.
+    For training, we use the Adam optimizer, a mini-batch size
+    of 32, a learning rate of 0.0001, and decay rates of β1 = 0:5,
+    β2 = 0:999.
+
+    As a module to predict the affine parameters for ASIN, our multilayer
+    perceptron consists of seven layers for FFHQ and
+    EmotioNet datasets and three layers for the CelebA dataset.
+    """
 
     def __init__(self, celeba_loader, rafd_loader, config):
         """Initialize configurations."""
