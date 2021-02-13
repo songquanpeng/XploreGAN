@@ -10,7 +10,7 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 import math
 import random
-import datetime
+import time
 
 
 def get_image_list(image_dir):
@@ -67,20 +67,37 @@ def generate_features(config):
 
 
 def main(config):
-    print("start at: " + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    start_time = time.time()
     if config.debug:
         print("Running in debug mode.")
     cudnn.benchmark = True
-    if config.resume:
+    if config.features_clustered or config.features_calculated:
         features = np.load(config.save_path + "/features.npz")["arr_0"]
     else:
+        print("Start calculating.")
         features = generate_features(config)
-
     print("Features loading done.")
-    print("Start clustering.")
-    centers, labels = cluster_features(features, config.num_cluster)
-    np.savez(config.save_path + "/clusters.npz", centers=centers, labels=labels)
-    print("End at: " + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+    if config.features_clustered:
+        clusters = np.load(config.save_path + "/clusters.npz")
+        centers = clusters["centers"]
+        labels = clusters["labels"]
+    else:
+        print("Start clustering.")
+        centers, labels = cluster_features(features, config.num_cluster)
+    print("Clusters loading done.")
+
+    clusters = [[] for _ in range(config.num_cluster)]
+    for i in range(len(labels)):
+        label = labels[i]
+        clusters[label].append(i)
+    stds = np.zeros((config.num_cluster,))
+    for i in range(config.num_cluster):
+        cluster = features[clusters[i]]
+        stds[i] = np.std(cluster)
+    np.savez(config.save_path + "/clusters.npz", centers=centers, labels=labels, stds=stds)
+    end_time = time.time()
+    print(f"All done (about {(end_time - start_time) / 60:.2f} minutes used).")
 
 
 if __name__ == '__main__':
@@ -90,7 +107,8 @@ if __name__ == '__main__':
     parser.add_argument('--num_cluster', type=int, default=40, help='number of cluster')
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--save_path', type=str, default='./data/celeba/generated')
-    parser.add_argument('--resume', type=bool, default=False)
+    parser.add_argument('--features_calculated', type=bool, default=False)
+    parser.add_argument('--features_clustered', type=bool, default=False)
     parser.add_argument('--debug', type=bool, default=False)
     cfg = parser.parse_args()
     print(cfg)
