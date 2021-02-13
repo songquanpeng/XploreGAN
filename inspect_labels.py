@@ -2,11 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from tqdm import tqdm
+import argparse
 
-cluster = np.load("./data/celeba/generated/clusters.npz")
-labels = cluster["labels"]
-images_path = r"D:\Research\Data\celeba\images"
-output_path = "./data/celeba/generated"
+cluster = None
+images_path = None
+output_path = None
 
 
 def load_image(index):
@@ -40,5 +40,15 @@ def show_images(label, display=False, n=5):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--cluster_path', type=str, default='./data/celeba/generated/clusters.npz')
+    parser.add_argument('--images_path', type=str, default=r"D:\Research\Data\celeba\images")
+    parser.add_argument('--output_path', type=str, default="./data/celeba/generated")
+    cfg = parser.parse_args()
+    print(cfg)
+    images_path = cfg.images_path
+    output_path = cfg.output_path
+    cluster = np.load(cfg.cluster_path)
+    labels = cluster["labels"]
     for label in tqdm(range(40)):
         show_images(label)
