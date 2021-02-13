@@ -1,6 +1,10 @@
 # Exploring Unlabeled Faces for Novel Attribute Discovery
 
 ***This is an ongoing unofficial implementation.***
+Current progress:
++ [x] Generate the pseudo labels.
++ [x] Verify the cluster results.
++ [ ] Implement the proposed model.
 
 ## Dependencies
 `pip install -r requirements.txt`
@@ -12,8 +16,11 @@ https://www.dropbox.com/s/d1kjpkqklf0uw77/celeba.zip
 ## Training & Testing (Need update)
 ```sh
 # Generate labels
-python generate_label.py --dataset_path D:\Research\Data\celeba\images 
+python generate_labels.py --dataset_path D:\Research\Data\celeba\images 
                          --batch_size 32
+
+# Inspect generated labels
+python inspect_labels.py
 
 # Train StarGAN using the CelebA dataset
 python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 \
