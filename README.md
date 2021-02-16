@@ -5,8 +5,11 @@
 Current progress:
 + [x] Generate the pseudo labels.
 + [x] Verify the cluster results.
-+ [ ] Modify the dataloader.
-+ [ ] Implement the proposed model.
++ [x] Modify the dataloader.
++ [ ] Implement the ASIN.
++ [ ] Implement the generator.
++ [ ] Implement the discriminator.
++ [ ] Implement the auxiliary classifier.
 
 ## Dependencies
 ```shell script

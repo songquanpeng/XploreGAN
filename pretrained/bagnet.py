@@ -119,9 +119,6 @@ class BagNet(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        # TODO: 究竟是直接取的网络输出，还是中间一层？
-        a = x.detach().clone()
-
         if self.avg_pool:
             x = nn.AvgPool2d(x.size()[2], stride=1)(x)
             x = x.view(x.size(0), -1)

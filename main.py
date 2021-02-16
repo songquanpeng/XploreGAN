@@ -6,10 +6,7 @@ from torch.backends import cudnn
 
 
 def main(config):
-    # For fast training.
     cudnn.benchmark = True
-
-    # Create directories if not exist.
     if not os.path.exists(config.log_dir):
         os.makedirs(config.log_dir)
     if not os.path.exists(config.model_save_dir):
@@ -20,20 +17,12 @@ def main(config):
         os.makedirs(config.result_dir)
 
     # Data loader.
-    celeba_loader = None
-    rafd_loader = None
-
-    if config.dataset in ['CelebA', 'Both']:
-        celeba_loader = get_loader(config.cluster_npz_path,
-                                   config.celeba_crop_size, config.image_size, config.batch_size,
-                                   'CelebA', config.mode, config.num_workers)
-    # if config.dataset in ['RaFD', 'Both']:
-    #     rafd_loader = get_loader(config.rafd_image_dir, None, None,
-    #                              config.rafd_crop_size, config.image_size, config.batch_size,
-    #                              'RaFD', config.mode, config.num_workers)
+    celeba_loader = get_loader(config.cluster_npz_path,
+                               config.celeba_crop_size, config.image_size, config.batch_size,
+                               config.dataset, config.mode, config.num_workers)
 
     # Solver for training and testing StarGAN.
-    solver = Solver(celeba_loader, rafd_loader, config)
+    solver = Solver(celeba_loader, config)
 
     if config.mode == 'train':
         solver.train()
@@ -70,7 +59,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta2', type=float, default=0.999, help='beta2 for Adam optimizer')
     parser.add_argument('--resume_iters', type=int, default=None, help='resume training from this step')
     parser.add_argument('--selected_attrs', '--list', nargs='+', help='selected attributes for the CelebA dataset',
-                        default=['Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Male', 'Young'])
+                        default=['Pseudo'])
 
     # Test configuration.
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
@@ -95,6 +84,6 @@ if __name__ == '__main__':
     parser.add_argument('--model_save_step', type=int, default=10000)
     parser.add_argument('--lr_update_step', type=int, default=1000)
 
-    config = parser.parse_args()
-    print(config)
-    main(config)
+    cfg = parser.parse_args()
+    print(cfg)
+    main(cfg)
