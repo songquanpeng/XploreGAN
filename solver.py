@@ -60,7 +60,7 @@ class Solver(object):
         self.celeba_loader = celeba_loader
 
         # Model configurations.
-        self.c_dim = config.c_dim
+        self.c_dim = config.c_dim  # the domain number
         self.c2_dim = config.c2_dim
         self.image_size = config.image_size
         self.g_conv_dim = config.g_conv_dim
@@ -104,7 +104,8 @@ class Solver(object):
         self.lr_update_step = config.lr_update_step
 
         # Create a generator and a discriminator.
-        self.G = Generator(self.g_conv_dim, self.c_dim, self.g_repeat_num)
+        # TODO: fully control the generator's parameters
+        self.G = Generator(self.g_conv_dim, self.g_repeat_num)
         self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim, self.d_repeat_num)
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.g_lr, (self.beta1, self.beta2))
         self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, (self.beta1, self.beta2))
@@ -181,12 +182,13 @@ class Solver(object):
             # Fetch real images and labels.
             # TODO: is it okay to iterate data like that?
             try:
-                x_real, label, mean, std = next(data_iter)
+                x_real, label, center, mean, std = next(data_iter)
             except StopIteration:
                 data_iter = iter(data_loader)
-                x_real, label, mean, std = next(data_iter)
+                x_real, label, center, mean, std = next(data_iter)
 
             x_real = x_real.to(self.device)  # Input images.
+            label = label2onehot(label, self.c_dim)
             label = label.to(self.device)
             mean = mean.to(self.device)
             std = std.to(self.device)
@@ -196,6 +198,7 @@ class Solver(object):
             # =================================================================================== #
 
             # Compute loss with real images.
+            # (batch_size, 1, image_size/conv_dim, image_size/conv_dim), (batch_size, c_dim)
             out_src, out_cls = self.D(x_real)
             d_loss_real = - torch.mean(out_src)
             d_loss_cls = classification_loss(out_cls, label, self.dataset)

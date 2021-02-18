@@ -120,11 +120,13 @@ def main(config):
         label = labels[i]
         clusters[label].append(i)
     stds = np.zeros((config.num_cluster,))
+    means = np.zeros_like(stds)
     for i in range(config.num_cluster):
         cluster = features[clusters[i]]
         stds[i] = np.std(cluster)
+        means[i] = np.mean(centers[i])
     image_paths = get_image_list(config.dataset_path)
-    np.savez(config.save_path + "/clusters.npz", centers=centers, labels=labels, stds=stds, image_paths=image_paths)
+    np.savez(config.save_path + "/clusters.npz", centers=centers, labels=labels, means=means, stds=stds, image_paths=image_paths)
     end_time = time.time()
     print(f"All done (about {(end_time - start_time) / 60:.2f} minutes used).")
 

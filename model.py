@@ -34,10 +34,11 @@ class Generator(nn.Module):
     generation performance on fine, stochastic details of the image.
     """
 
-    def __init__(self, conv_dim=64, c_dim=5, repeat_num=6, mlp_layer_num=3, mlp_neurons_num=4):
+    def __init__(self, conv_dim=64, repeat_num=6, mlp_layer_num=3, mlp_neurons_num=4):
         super(Generator, self).__init__()
 
-        # MLP used to predict the affine parameters for ASIN (7 layers for FFHQ & EmotionNet, 3 layer for CelebA)
+        # MLP part.
+        # Used to predict the affine parameters for ASIN (7 layers for FFHQ & EmotionNet, 3 layer for CelebA)
         layers = []
         layers.append(nn.Linear(2, mlp_neurons_num))
         layers.append(nn.ReLU())
@@ -51,7 +52,7 @@ class Generator(nn.Module):
 
         # Encoder part.
         layers = []
-        layers.append(nn.Conv2d(3 + c_dim, conv_dim, kernel_size=7, stride=1, padding=3, bias=False))
+        layers.append(nn.Conv2d(3, conv_dim, kernel_size=7, stride=1, padding=3, bias=False))
         layers.append(nn.InstanceNorm2d(conv_dim, affine=True, track_running_stats=True))
         layers.append(nn.ReLU(inplace=True))
 
@@ -93,14 +94,17 @@ class Generator(nn.Module):
         # Replicate spatially and concatenate domain information.
         # Note that this type of label conditioning does not work at all if we use reflection padding in Conv2d.
         # This is because instance normalization ignores the shifting (or bias) effect.
-        # TODO: mean and std should be tensor?
-        style_mean, style_std = self.mlp([mean, std])
+        # TODO: the shape of mean and std should be what? A single value? I think it should be a single value.
+        mean = torch.unsqueeze(mean, 1)
+        std = torch.unsqueeze(std, 1)
+        meta = torch.cat((mean, std), 1).float()
+        style = self.mlp(meta)
         x = self.encoder(x)
         # decoder part 1
         # TODO: not sure if it's okay
         for residual_block in self.decoder_residual_blocks:
             x = residual_block(x)
-            x = ASIN(x, style_mean, style_std)
+            x = ASIN(x, style)
         x = self.decoder_part2(x)
         return x
 

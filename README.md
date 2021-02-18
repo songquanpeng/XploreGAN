@@ -6,7 +6,7 @@ Current progress:
 + [x] Generate the pseudo labels.
 + [x] Verify the cluster results.
 + [x] Modify the dataloader.
-+ [ ] Implement the ASIN.
++ [x] Implement the ASIN.
 + [ ] Implement the generator.
 + [ ] Implement the discriminator.
 + [ ] Implement the auxiliary classifier.
