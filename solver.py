@@ -285,7 +285,8 @@ class Solver(object):
                     x_fake_list = [x_fixed]
                     # TODO: here we hardcode 5, should be the cluster num
                     for mean, std in [(fixed_mean, fixed_std)]:
-                        x_fake_list.append(self.G(x_fixed, mean, std))
+                        x_fake, _ = self.G(x_fixed, mean, std)
+                        x_fake_list.append(x_fake)
                     x_concat = torch.cat(x_fake_list, dim=3)
                     sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i + 1))
                     save_image(denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)
@@ -324,7 +325,8 @@ class Solver(object):
                 # Translate images.
                 x_fake_list = [x_real]
                 for c_trg in c_trg_list:
-                    x_fake_list.append(self.G(x_real, c_trg))
+                    x_fake, _ = self.G(x_real, c_trg)
+                    x_fake_list.append(x_fake)
 
                 # Save the translated images.
                 x_concat = torch.cat(x_fake_list, dim=3)
