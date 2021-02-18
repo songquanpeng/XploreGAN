@@ -158,7 +158,14 @@ class Solver(object):
         """Train StarGAN within a single dataset."""
         # Set data loader.
         data_loader = self.celeba_loader
+
+        # Fetch fixed inputs for debugging.
         data_iter = iter(data_loader)
+        x_fixed, label, mean, std = next(data_iter)
+        x_fixed = x_fixed.to(self.device)
+        fixed_mean = mean.to(self.device)
+        fixed_std = std.to(self.device)
+
 
         # Learning rate cache for decaying.
         g_lr = self.g_lr
@@ -182,10 +189,10 @@ class Solver(object):
             # Fetch real images and labels.
             # TODO: is it okay to iterate data like that?
             try:
-                x_real, label, center, mean, std = next(data_iter)
+                x_real, label, mean, std = next(data_iter)
             except StopIteration:
                 data_iter = iter(data_loader)
-                x_real, label, center, mean, std = next(data_iter)
+                x_real, label, mean, std = next(data_iter)
 
             x_real = x_real.to(self.device)  # Input images.
             label = label2onehot(label, self.c_dim)
@@ -271,8 +278,9 @@ class Solver(object):
             if (i + 1) % self.sample_step == 0:
                 with torch.no_grad():
                     x_fake_list = [x_fixed]
-                    for c_fixed in c_fixed_list:
-                        x_fake_list.append(self.G(x_fixed, c_fixed))
+                    # TODO: here we hardcode 5, should be the cluster num
+                    for mean, std in [(fixed_mean, fixed_std)]:
+                        x_fake_list.append(self.G(x_fixed, mean, std))
                     x_concat = torch.cat(x_fake_list, dim=3)
                     sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i + 1))
                     save_image(denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)

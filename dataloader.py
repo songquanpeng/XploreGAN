@@ -21,7 +21,6 @@ class CelebA(data.Dataset):
         self.centers = clusters["centers"]
         self.labels = clusters["labels"]
         self.stds = clusters["stds"]
-        self.means = clusters["means"]
         self.image_paths = clusters["image_paths"]
         self.preprocess()
 
@@ -31,7 +30,7 @@ class CelebA(data.Dataset):
             self.num_images = len(self.test_dataset)
 
     def preprocess(self):
-        images = [(self.image_paths[i], label, self.centers[label], self.means[label], self.stds[label]) for i, label in
+        images = [(self.image_paths[i], label, self.centers[label], self.stds[label]) for i, label in
                   enumerate(self.labels)]
         random.seed(1234)
         random.shuffle(images)
@@ -42,10 +41,10 @@ class CelebA(data.Dataset):
     def __getitem__(self, index):
         """Return one image and its corresponding attribute label."""
         dataset = self.train_dataset if self.mode == 'train' else self.test_dataset
-        path, label, center, mean, std = dataset[index]
+        path, label, center, std = dataset[index]
         image = Image.open(path)
         # TODO: is it okay to directly return variables like that?
-        return self.transform(image), label, center, mean, std
+        return self.transform(image), label, center, std
 
     def __len__(self):
         """Return the number of images."""

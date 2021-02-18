@@ -34,19 +34,22 @@ class Generator(nn.Module):
     generation performance on fine, stochastic details of the image.
     """
 
-    def __init__(self, conv_dim=64, repeat_num=6, mlp_layer_num=3, mlp_neurons_num=4):
+    def __init__(self, conv_dim=64, repeat_num=6, pca_dim=256, mlp_layer_num=3, mlp_neurons_num=256):
         super(Generator, self).__init__()
 
         # MLP part.
         # Used to predict the affine parameters for ASIN (7 layers for FFHQ & EmotionNet, 3 layer for CelebA)
         layers = []
-        layers.append(nn.Linear(2, mlp_neurons_num))
+        # TODO: choose a suitable mlp_neurons_num
+        layers.append(nn.Linear(2 * pca_dim, mlp_neurons_num))
         layers.append(nn.ReLU())
         for i in range(mlp_layer_num - 2):
             layers.append(nn.Linear(mlp_neurons_num, mlp_neurons_num))
             layers.append(nn.ReLU())
-        layers.append(nn.Linear(mlp_neurons_num, 2))
-        layers.append(nn.ReLU())
+        # Here we hardcode the output dimension
+        layers.append(nn.Linear(mlp_neurons_num, 2 * 256))
+        # TODO: does we need a activation layer here? if yes, which one?
+        # layers.append(nn.ReLU())
 
         self.mlp = nn.Sequential(*layers)
 
@@ -95,8 +98,6 @@ class Generator(nn.Module):
         # Note that this type of label conditioning does not work at all if we use reflection padding in Conv2d.
         # This is because instance normalization ignores the shifting (or bias) effect.
         # TODO: the shape of mean and std should be what? A single value? I think it should be a single value.
-        mean = torch.unsqueeze(mean, 1)
-        std = torch.unsqueeze(std, 1)
         meta = torch.cat((mean, std), 1).float()
         style = self.mlp(meta)
         x = self.encoder(x)

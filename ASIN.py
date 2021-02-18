@@ -13,12 +13,17 @@ def calc_mean_std(feat, eps=1e-5):
 
 def calc_mean_std_from_style(style):
     # the shape should be [batch_size, 256, 1, 1]
-    return 0, 0
+    size = style.size()
+    n, c = size[:2]
+    m = c // 2
+    mean = style[:, :m].view(n, m, 1, 1)
+    std = style[:, m:].view(n, m, 1, 1)
+    return mean, std
 
 
 def attribute_summary_instance_normalization(content_feat, style):
-    style_mean, style_std = calc_mean_std_from_style(style)
     size = content_feat.size()
+    style_mean, style_std = calc_mean_std_from_style(style)
     content_mean, content_std = calc_mean_std(content_feat)
 
     normalized_feat = (content_feat - content_mean.expand(
