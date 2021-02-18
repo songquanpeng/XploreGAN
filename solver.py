@@ -42,12 +42,17 @@ def label2onehot(labels, dim):
     return out
 
 
-def get_label2style(cluster_npz_path):
+def get_means_stds(cluster_npz_path, batch_size, device):
     clusters = np.load(cluster_npz_path)
-    centers = clusters["centers"]
+    means = clusters["centers"]
     stds = clusters["stds"]
-    styles = list(zip(centers, stds))
-    return styles
+    means = [means for _ in range(batch_size)]
+    stds = [stds for _ in range(batch_size)]
+    means = np.stack(means, axis=1)
+    stds = np.stack(stds, axis=1)
+    means = torch.tensor(means).to(device)
+    stds = torch.tensor(stds).to(device)
+    return means, stds
 
 
 class Solver(object):
@@ -112,10 +117,7 @@ class Solver(object):
         self.model_save_step = config.model_save_step
         self.lr_update_step = config.lr_update_step
 
-        self.label2style = get_label2style(config.cluster_npz_path)
-        # mean = [mean for _ in range(self.batch_size)]
-        # mean = np.stack(mean, axis=0)
-        # mean = torch.tensor(mean).to(self.device)
+        self.means, self.stds = get_means_stds(config.cluster_npz_path, self.batch_size, self.device)
 
         self.selected_labels = config.selected_labels
 
@@ -298,14 +300,8 @@ class Solver(object):
                 with torch.no_grad():
                     x_fake_list = [x_fixed]
                     for select_label in self.selected_labels:
-                        mean, std = self.label2style[select_label]
-                        mean = [mean for _ in range(self.batch_size)]
-                        std = [std for _ in range(self.batch_size)]
-                        mean = np.stack(mean, axis=0)
-                        std = np.stack(std, axis=0)
-                        mean = torch.tensor(mean).to(self.device)
-                        std = torch.tensor(std).to(self.device)
-                        x_fake, _ = self.G(x_fixed, mean, std)
+                        mean, std = self.means[select_label], self.stds[select_label]
+                        x_fake, _ = self.G(x_real, mean, std)
                         x_fake_list.append(x_fake)
                     x_concat = torch.cat(x_fake_list, dim=3)
                     sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i + 1))
@@ -349,13 +345,7 @@ class Solver(object):
                 label_str = ','.join(str(x) for x in self.selected_labels)
 
                 for select_label in self.selected_labels:
-                    mean, std = self.label2style[select_label]
-                    mean = [mean for _ in range(self.batch_size)]
-                    std = [std for _ in range(self.batch_size)]
-                    mean = np.stack(mean, axis=0)
-                    std = np.stack(std, axis=0)
-                    mean = torch.tensor(mean).to(self.device)
-                    std = torch.tensor(std).to(self.device)
+                    mean, std = self.means[select_label], self.stds[select_label]
                     x_fake, _ = self.G(x_real, mean, std)
                     x_fake_list.append(x_fake)
 
