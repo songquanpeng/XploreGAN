@@ -45,18 +45,12 @@ python inspect_labels.py
 # Train with the CelebA dataset
 python main.py --mode train --dataset CelebA --image_size 128 --c_dim 100 \
                --cluster_npz_path data/celeba/generated/clusters.npz \
-               --batch_size 32
+               --batch_size 32 --selected_labels 0 1 2 3 4
 
 # Test with the CelebA dataset
 python main.py --mode test --dataset CelebA --image_size 128 --c_dim 100 \
                --cluster_npz_path data/celeba/generated/clusters.npz \
                --test_iters 10000 --selected_labels 0 1 2 3 4
-
-# Use the pre-trainged network
-python main.py --mode test --dataset CelebA --image_size 128 --c_dim 5 \
-               --selected_attrs Black_Hair Blond_Hair Brown_Hair Male Young \
-               --model_save_dir='stargan_celeba_128/models' \
-               --result_dir='stargan_celeba_128/results'
 ```
 
 
