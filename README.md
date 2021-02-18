@@ -48,8 +48,9 @@ python main.py --mode train --dataset CelebA --image_size 128 --c_dim 100 \
                --batch_size 32
 
 # Test with the CelebA dataset
-python main.py --mode test --dataset CelebA --image_size 128 --c_dim 5 \
-               --cluster_npz_path data/celeba/generated/clusters.npz
+python main.py --mode test --dataset CelebA --image_size 128 --c_dim 100 \
+               --cluster_npz_path data/celeba/generated/clusters.npz \
+               --test_iters 10000 --selected_labels 0 1 2 3 4
 
 # Use the pre-trainged network
 python main.py --mode test --dataset CelebA --image_size 128 --c_dim 5 \

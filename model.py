@@ -97,7 +97,7 @@ class Generator(nn.Module):
         # Replicate spatially and concatenate domain information.
         # Note that this type of label conditioning does not work at all if we use reflection padding in Conv2d.
         # This is because instance normalization ignores the shifting (or bias) effect.
-        # TODO: the shape of mean and std should be what? A single value? I think it should be a single value.
+        # TODO: the shape of mean and std should be what?
         meta = torch.cat((mean, std), 1).float()
         style = self.mlp(meta)
         x = self.encoder(x)

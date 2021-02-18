@@ -65,6 +65,7 @@ if __name__ == '__main__':
 
     # Test configuration.
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
+    parser.add_argument('--selected_labels', nargs='+', type=int, default=[0, 1, 2, 3, 4], help='selected labels to generate')
 
     # Miscellaneous.
     parser.add_argument('--num_workers', type=int, default=1)

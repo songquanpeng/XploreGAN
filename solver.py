@@ -42,6 +42,14 @@ def label2onehot(labels, dim):
     return out
 
 
+def get_label2style(cluster_npz_path):
+    clusters = np.load(cluster_npz_path)
+    centers = clusters["centers"]
+    stds = clusters["stds"]
+    styles = list(zip(centers, stds))
+    return styles
+
+
 class Solver(object):
     """Solver for training and testing StarGAN.
     For training, we use the Adam optimizer, a mini-batch size
@@ -103,6 +111,13 @@ class Solver(object):
         self.sample_step = config.sample_step
         self.model_save_step = config.model_save_step
         self.lr_update_step = config.lr_update_step
+
+        self.label2style = get_label2style(config.cluster_npz_path)
+        # mean = [mean for _ in range(self.batch_size)]
+        # mean = np.stack(mean, axis=0)
+        # mean = torch.tensor(mean).to(self.device)
+
+        self.selected_labels = config.selected_labels
 
         # Create a generator and a discriminator.
         # TODO: fully control the generator's parameters
@@ -166,7 +181,6 @@ class Solver(object):
         x_fixed = x_fixed.to(self.device)
         fixed_mean = mean.to(self.device)
         fixed_std = std.to(self.device)
-
 
         # Learning rate cache for decaying.
         g_lr = self.g_lr
@@ -283,8 +297,14 @@ class Solver(object):
             if (i + 1) % self.sample_step == 0:
                 with torch.no_grad():
                     x_fake_list = [x_fixed]
-                    # TODO: here we hardcode 5, should be the cluster num
-                    for mean, std in [(fixed_mean, fixed_std)]:
+                    for select_label in self.selected_labels:
+                        mean, std = self.label2style[select_label]
+                        mean = [mean for _ in range(self.batch_size)]
+                        std = [std for _ in range(self.batch_size)]
+                        mean = np.stack(mean, axis=0)
+                        std = np.stack(std, axis=0)
+                        mean = torch.tensor(mean).to(self.device)
+                        std = torch.tensor(std).to(self.device)
                         x_fake, _ = self.G(x_fixed, mean, std)
                         x_fake_list.append(x_fake)
                     x_concat = torch.cat(x_fake_list, dim=3)
@@ -316,20 +336,31 @@ class Solver(object):
         data_loader = self.celeba_loader
 
         with torch.no_grad():
-            for i, (x_real, c_org) in enumerate(data_loader):
+            for i, (x_real, label, _, _) in enumerate(data_loader):
+                if i == 100:
+                    break
 
                 # Prepare input images and target domain labels.
                 x_real = x_real.to(self.device)
-                c_trg_list = self.create_labels(c_org, self.c_dim, self.dataset, self.selected_attrs)
 
                 # Translate images.
                 x_fake_list = [x_real]
-                for c_trg in c_trg_list:
-                    x_fake, _ = self.G(x_real, c_trg)
+
+                label_str = ','.join(str(x) for x in self.selected_labels)
+
+                for select_label in self.selected_labels:
+                    mean, std = self.label2style[select_label]
+                    mean = [mean for _ in range(self.batch_size)]
+                    std = [std for _ in range(self.batch_size)]
+                    mean = np.stack(mean, axis=0)
+                    std = np.stack(std, axis=0)
+                    mean = torch.tensor(mean).to(self.device)
+                    std = torch.tensor(std).to(self.device)
+                    x_fake, _ = self.G(x_real, mean, std)
                     x_fake_list.append(x_fake)
 
                 # Save the translated images.
                 x_concat = torch.cat(x_fake_list, dim=3)
-                result_path = os.path.join(self.result_dir, '{}-images.jpg'.format(i + 1))
+                result_path = os.path.join(self.result_dir, f'images{i + 1}({label_str}).jpg')
                 save_image(denorm(x_concat.data.cpu()), result_path, nrow=1, padding=0)
                 print('Saved real and fake images into {}...'.format(result_path))
