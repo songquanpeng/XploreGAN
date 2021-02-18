@@ -70,6 +70,7 @@ class Solver(object):
         self.lambda_cls = config.lambda_cls
         self.lambda_rec = config.lambda_rec
         self.lambda_gp = config.lambda_gp
+        self.lambda_lnt = config.lambda_lnt
 
         # Training configurations.
         self.dataset = config.dataset
@@ -211,7 +212,7 @@ class Solver(object):
             d_loss_cls = classification_loss(out_cls, label, self.dataset)
 
             # Compute loss with fake images.
-            x_fake = self.G(x_real, mean, std)
+            x_fake, _ = self.G(x_real, mean, std)
             out_src, out_cls = self.D(x_fake.detach())
             d_loss_fake = torch.mean(out_src)
 
@@ -237,17 +238,20 @@ class Solver(object):
 
             if (i + 1) % self.n_critic == 0:
                 # Original-to-target domain.
-                x_fake = self.G(x_real, mean, std)
+                x_fake, h_x_real = self.G(x_real, mean, std)
                 out_src, out_cls = self.D(x_fake)
                 g_loss_fake = - torch.mean(out_src)
                 g_loss_cls = classification_loss(out_cls, label, self.dataset)
 
                 # Target-to-original domain.
-                x_reconst = self.G(x_fake, mean, std)
+                x_reconst, h_x_fake = self.G(x_fake, mean, std)
                 g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
 
+                # Latent loss: the distance between real and fake images in the feature space
+                g_loss_lnt = torch.mean(torch.sqrt(torch.square(h_x_real - h_x_fake)))
+
                 # Backward and optimize.
-                g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls
+                g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls + self.lambda_lnt * g_loss_lnt
                 self.reset_grad()
                 g_loss.backward()
                 self.g_optimizer.step()
@@ -256,6 +260,7 @@ class Solver(object):
                 loss['G/loss_fake'] = g_loss_fake.item()
                 loss['G/loss_rec'] = g_loss_rec.item()
                 loss['G/loss_cls'] = g_loss_cls.item()
+                loss['G/loss_lnt'] = g_loss_lnt.item()
 
             # =================================================================================== #
             #                                 4. Miscellaneous                                    #

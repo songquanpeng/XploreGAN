@@ -2,15 +2,16 @@
 
 ***This is an ongoing unofficial implementation.***
 
-Current progress:
+**Current progress:**
 + [x] Generate the pseudo labels.
 + [x] Verify the cluster results.
 + [x] Modify the dataloader.
-+ [x] Implement the ASIN.
-+ [x] Implement the generator.
-+ [x] Implement the discriminator.
-+ [x] Implement the auxiliary classifier.
-+ [ ] Implement the loss function.
++ [x] Implement the attribute summary instance normalization (ASIN).
++ [x] Modify the generator.
++ [x] Modify the discriminator.
++ [x] Implement the latent loss.
++ [ ] Generate fixed images per sample step.
++ [ ] Implement the test function.
 
 ## Dependencies
 ```shell script

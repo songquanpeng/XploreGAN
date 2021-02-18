@@ -101,13 +101,14 @@ class Generator(nn.Module):
         meta = torch.cat((mean, std), 1).float()
         style = self.mlp(meta)
         x = self.encoder(x)
+        h = x.detach().clone()
         # decoder part 1
         # TODO: not sure if it's okay
         for residual_block in self.decoder_residual_blocks:
             x = residual_block(x)
             x = ASIN(x, style)
         x = self.decoder_part2(x)
-        return x
+        return x, h
 
 
 class Discriminator(nn.Module):
