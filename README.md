@@ -7,9 +7,10 @@ Current progress:
 + [x] Verify the cluster results.
 + [x] Modify the dataloader.
 + [x] Implement the ASIN.
-+ [ ] Implement the generator.
-+ [ ] Implement the discriminator.
-+ [ ] Implement the auxiliary classifier.
++ [x] Implement the generator.
++ [x] Implement the discriminator.
++ [x] Implement the auxiliary classifier.
++ [ ] Implement the loss function.
 
 ## Dependencies
 ```shell script
@@ -38,8 +39,9 @@ python generate_labels.py --dataset_path D:\Research\Data\celeba\images \
 python inspect_labels.py
 
 # Train with the CelebA dataset
-python main.py --mode train --dataset CelebA --image_size 128 --c_dim 5 \
-               --cluster_npz_path data/celeba/generated/clusters.npz
+python main.py --mode train --dataset CelebA --image_size 128 --c_dim 100 \
+               --cluster_npz_path data/celeba/generated/clusters.npz \
+               --batch_size 32
 
 # Test with the CelebA dataset
 python main.py --mode test --dataset CelebA --image_size 128 --c_dim 5 \
