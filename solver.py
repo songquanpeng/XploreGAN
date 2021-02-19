@@ -8,6 +8,7 @@ import numpy as np
 import os
 import time
 import datetime
+from utils import send_message
 
 
 def classification_loss(logit, target, dataset='CelebA'):
@@ -140,11 +141,12 @@ class Solver(object):
 
     def restore_model(self, resume_iters):
         """Restore the trained generator and discriminator."""
-        print('Loading the trained models from step {}...'.format(resume_iters))
+        print('Loading the trained models from step {}...'.format(resume_iters), end=' ')
         G_path = os.path.join(self.model_save_dir, '{}-G.ckpt'.format(resume_iters))
         D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(resume_iters))
         self.G.load_state_dict(torch.load(G_path, map_location=lambda storage, loc: storage))
         self.D.load_state_dict(torch.load(D_path, map_location=lambda storage, loc: storage))
+        print("Done.")
 
     def update_lr(self, g_lr, d_lr):
         """Decay learning rates of the generator and discriminator."""
@@ -294,14 +296,13 @@ class Solver(object):
                 if self.use_tensorboard:
                     for tag, value in loss.items():
                         self.logger.scalar_summary(tag, value, i + 1)
-
             # Translate fixed images for debugging.
             if (i + 1) % self.sample_step == 0:
                 with torch.no_grad():
                     x_fake_list = [x_fixed]
                     for select_label in self.selected_labels:
                         mean, std = self.means[select_label], self.stds[select_label]
-                        x_fake, _ = self.G(x_real, mean, std)
+                        x_fake, _ = self.G(x_fixed, mean, std)
                         x_fake_list.append(x_fake)
                     x_concat = torch.cat(x_fake_list, dim=3)
                     sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i + 1))
@@ -315,6 +316,7 @@ class Solver(object):
                 torch.save(self.G.state_dict(), G_path)
                 torch.save(self.D.state_dict(), D_path)
                 print('Saved model checkpoints into {}...'.format(self.model_save_dir))
+                send_message(f'Current iteration step is {self.model_save_step}.')
 
             # Decay learning rates.
             if (i + 1) % self.lr_update_step == 0 and (i + 1) > (self.num_iters - self.num_iters_decay):
@@ -325,9 +327,14 @@ class Solver(object):
 
     def test(self):
         """Translate images using StarGAN trained on a single dataset."""
+        # Prepare target dir
+        label_str = ' '.join(str(x) for x in self.selected_labels)
+        target_dir = os.path.join(self.result_dir, f"model-{self.test_iters}", label_str)
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+
         # Load the trained generator.
         self.restore_model(self.test_iters)
-
         # Set data loader.
         data_loader = self.celeba_loader
 
@@ -342,8 +349,6 @@ class Solver(object):
                 # Translate images.
                 x_fake_list = [x_real]
 
-                label_str = ','.join(str(x) for x in self.selected_labels)
-
                 for select_label in self.selected_labels:
                     mean, std = self.means[select_label], self.stds[select_label]
                     x_fake, _ = self.G(x_real, mean, std)
@@ -351,6 +356,6 @@ class Solver(object):
 
                 # Save the translated images.
                 x_concat = torch.cat(x_fake_list, dim=3)
-                result_path = os.path.join(self.result_dir, f'images{i + 1}({label_str}).jpg')
+                result_path = os.path.join(target_dir, f'image{i + 1}.jpg')
                 save_image(denorm(x_concat.data.cpu()), result_path, nrow=1, padding=0)
                 print('Saved real and fake images into {}...'.format(result_path))

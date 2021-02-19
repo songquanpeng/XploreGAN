@@ -11,7 +11,7 @@
 + [x] Modify the discriminator.
 + [x] Implement the latent loss.
 + [ ] Generate fixed images per sample step.
-+ [ ] Implement the test function.
++ [x] Implement the test function.
 + [ ] Qualitative evaluation on CelebA.
 + [ ] Facial attribute translation on CelebA.
 + [ ] Image Translation between multiple datasets.
