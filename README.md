@@ -10,7 +10,7 @@
 + [x] Modify the generator.
 + [x] Modify the discriminator.
 + [x] Implement the latent loss.
-+ [ ] Generate fixed images per sample step.
++ [x] Generate fixed images per sample step.
 + [x] Implement the test function.
 + [ ] Qualitative evaluation on CelebA.
 + [ ] Facial attribute translation on CelebA.
@@ -36,16 +36,14 @@ https://www.dropbox.com/s/d1kjpkqklf0uw77/celeba.zip
 ## Training & Testing
 ```sh
 # Generate pseudo labels
-python generate_labels.py --dataset_path D:\Research\Data\celeba\images \
-                          --batch_size 32
+python ./scripts/generate_labels.py --dataset_path D:\Research\Data\celeba\images \
+                                    --batch_size 32
 
 # Inspect pseudo labels
-python inspect_labels.py
+python ./scripts/inspect_labels.py
 
 # Train with the CelebA dataset
-python main.py --mode train --dataset CelebA --image_size 128 --c_dim 100 \
-               --cluster_npz_path data/celeba/generated/clusters.npz \
-               --batch_size 32 --selected_labels 0 1 2 3 4
+./scripts/train.sh
 
 # Test with the CelebA dataset
 python main.py --mode test --dataset CelebA --image_size 128 --c_dim 100 \

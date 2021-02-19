@@ -17,7 +17,7 @@ def main(config):
         os.makedirs(config.result_dir)
 
     # Data loader.
-    celeba_loader = get_loader(config.cluster_npz_path,
+    celeba_loader = get_loader(config.cluster_npz_path, config.dataset_path,
                                config.celeba_crop_size, config.image_size, config.batch_size,
                                config.dataset, config.mode, config.num_workers)
 
@@ -74,6 +74,7 @@ if __name__ == '__main__':
 
     # Directories.
     parser.add_argument('--cluster_npz_path', type=str, default='data/celeba/generated/clusters.npz')
+    parser.add_argument('--dataset_path', type=str, default='./data/celeba/')
     parser.add_argument('--attr_path', type=str, default='data/celeba/list_attr_celeba.txt')
     parser.add_argument('--rafd_image_dir', type=str, default='data/RaFD/train')
     parser.add_argument('--log_dir', type=str, default='experiment/logs')

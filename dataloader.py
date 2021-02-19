@@ -11,7 +11,7 @@ import numpy as np
 class CelebA(data.Dataset):
     """Dataset class for the CelebA dataset."""
 
-    def __init__(self, cluster_npz_path, transform, mode):
+    def __init__(self, cluster_npz_path, dataset_path, transform, mode):
         """Initialize and preprocess the CelebA dataset."""
         self.transform = transform
         self.mode = mode
@@ -22,6 +22,7 @@ class CelebA(data.Dataset):
         self.labels = clusters["labels"]
         self.stds = clusters["stds"]
         self.image_paths = clusters["image_paths"]
+        self.image_paths = [os.path.join(dataset_path, i) for i in self.image_paths]
         self.preprocess()
 
         if mode == 'train':
@@ -51,7 +52,7 @@ class CelebA(data.Dataset):
         return self.num_images
 
 
-def get_loader(cluster_npz_path, crop_size=178, image_size=128,
+def get_loader(cluster_npz_path, dataset_path, crop_size=178, image_size=128,
                batch_size=16, dataset='CelebA', mode='train', num_workers=1):
     """Build and return a data loader."""
     transform = []
@@ -64,7 +65,7 @@ def get_loader(cluster_npz_path, crop_size=178, image_size=128,
     transform = T.Compose(transform)
 
     if dataset == 'CelebA':
-        dataset = CelebA(cluster_npz_path, transform, mode)
+        dataset = CelebA(cluster_npz_path, dataset_path, transform, mode)
     # elif dataset == 'RaFD':
     #     dataset = ImageFolder(image_dir, transform)
 
