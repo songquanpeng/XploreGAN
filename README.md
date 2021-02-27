@@ -45,10 +45,11 @@ python ./scripts/inspect_labels.py
 # Train with the CelebA dataset
 ./scripts/train.sh
 
+# Resume training
+./scripts/resume.sh 10000
+
 # Test with the CelebA dataset
-python main.py --mode test --dataset CelebA --image_size 128 --c_dim 100 \
-               --cluster_npz_path data/celeba/generated/clusters.npz \
-               --test_iters 10000 --selected_labels 0 1 2 3 4
+./scripts/test.sh
 ```
 
 

@@ -101,6 +101,7 @@ class Solver(object):
 
         # Test configurations.
         self.test_iters = config.test_iters
+        self.test_images_num = config.test_images_num
 
         # Miscellaneous.
         self.use_tensorboard = config.use_tensorboard
@@ -121,6 +122,8 @@ class Solver(object):
         self.means, self.stds = get_means_stds(config.cluster_npz_path, self.batch_size, self.device)
 
         self.selected_labels = config.selected_labels
+        if len(self.selected_labels) == 0:
+            self.selected_labels = [i for i in range(self.means.shape[0])]
 
         # Create a generator and a discriminator.
         # TODO: fully control the generator's parameters
@@ -316,7 +319,7 @@ class Solver(object):
                 torch.save(self.G.state_dict(), G_path)
                 torch.save(self.D.state_dict(), D_path)
                 print('Saved model checkpoints into {}...'.format(self.model_save_dir))
-                send_message(f'Current iteration step is {self.model_save_step}.')
+                send_message(f'Current iteration step is {i + 1}.')
 
             # Decay learning rates.
             if (i + 1) % self.lr_update_step == 0 and (i + 1) > (self.num_iters - self.num_iters_decay):
@@ -327,35 +330,39 @@ class Solver(object):
 
     def test(self):
         """Translate images using StarGAN trained on a single dataset."""
-        # Prepare target dir
-        label_str = ' '.join(str(x) for x in self.selected_labels)
-        target_dir = os.path.join(self.result_dir, f"model-{self.test_iters}", label_str)
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
+        for test_iter in self.test_iters:
+            # Prepare target dir
+            if len(self.selected_labels) == self.means.shape[0]:
+                label_str = 'all'
+            else:
+                label_str = ' '.join(str(x) for x in self.selected_labels)
+            target_dir = os.path.join(self.result_dir, f"model-{test_iter}", label_str)
+            if not os.path.exists(target_dir):
+                os.makedirs(target_dir)
 
-        # Load the trained generator.
-        self.restore_model(self.test_iters)
-        # Set data loader.
-        data_loader = self.celeba_loader
+            # Load the trained generator.
+            self.restore_model(test_iter)
+            # Set data loader.
+            data_loader = self.celeba_loader
 
-        with torch.no_grad():
-            for i, (x_real, label, _, _) in enumerate(data_loader):
-                if i == 100:
-                    break
+            with torch.no_grad():
+                for i, (x_real, label, _, _) in enumerate(data_loader):
 
-                # Prepare input images and target domain labels.
-                x_real = x_real.to(self.device)
+                    # Prepare input images and target domain labels.
+                    x_real = x_real.to(self.device)
 
-                # Translate images.
-                x_fake_list = [x_real]
+                    # Translate images.
+                    x_fake_list = [x_real]
 
-                for select_label in self.selected_labels:
-                    mean, std = self.means[select_label], self.stds[select_label]
-                    x_fake, _ = self.G(x_real, mean, std)
-                    x_fake_list.append(x_fake)
+                    for select_label in self.selected_labels:
+                        mean, std = self.means[select_label], self.stds[select_label]
+                        x_fake, _ = self.G(x_real, mean, std)
+                        x_fake_list.append(x_fake)
 
-                # Save the translated images.
-                x_concat = torch.cat(x_fake_list, dim=3)
-                result_path = os.path.join(target_dir, f'image{i + 1}.jpg')
-                save_image(denorm(x_concat.data.cpu()), result_path, nrow=1, padding=0)
-                print('Saved real and fake images into {}...'.format(result_path))
+                    # Save the translated images.
+                    x_concat = torch.cat(x_fake_list, dim=3)
+                    result_path = os.path.join(target_dir, f'image{i + 1}.jpg')
+                    save_image(denorm(x_concat.data.cpu()), result_path, nrow=1, padding=0)
+                    print('Saved real and fake images into {}...'.format(result_path))
+                    if i == self.test_images_num:
+                        break

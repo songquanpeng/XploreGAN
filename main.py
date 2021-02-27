@@ -64,9 +64,9 @@ if __name__ == '__main__':
     parser.add_argument('--selected_clusters', nargs='+', help='selected clusters for training', default=[])
 
     # Test configuration.
-    parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
-    parser.add_argument('--selected_labels', nargs='+', type=int, default=[0, 1, 2, 3, 4],
-                        help='selected labels to generate')
+    parser.add_argument('--test_iters', nargs='+', type=int, default=[200000], help='test model from this step')
+    parser.add_argument('--selected_labels', nargs='+', type=int, default=[], help='selected labels to generate')
+    parser.add_argument('--test_images_num', type=int, default=200, help='set -1 to test all')
 
     # Miscellaneous.
     parser.add_argument('--num_workers', type=int, default=1)
