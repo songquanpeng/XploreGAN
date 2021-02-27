@@ -19,7 +19,7 @@ def main(config):
     # Data loader.
     celeba_loader = get_loader(config.cluster_npz_path, config.dataset_path,
                                config.celeba_crop_size, config.image_size, config.batch_size,
-                               config.dataset, config.mode, config.num_workers)
+                               config.dataset, config.mode, config.num_workers, config.selected_clusters)
 
     # Solver for training and testing StarGAN.
     solver = Solver(celeba_loader, config)
@@ -48,7 +48,6 @@ if __name__ == '__main__':
     parser.add_argument('--lambda_gp', type=float, default=10, help='weight for gradient penalty')
     parser.add_argument('--lambda_lnt', type=float, default=10, help='weight for latent loss')
 
-
     # Training configuration.
     parser.add_argument('--dataset', type=str, default='CelebA', choices=['CelebA', 'RaFD', 'Both'])
     parser.add_argument('--batch_size', type=int, default=16, help='mini-batch size')
@@ -62,10 +61,12 @@ if __name__ == '__main__':
     parser.add_argument('--resume_iters', type=int, default=None, help='resume training from this step')
     parser.add_argument('--selected_attrs', '--list', nargs='+', help='selected attributes for the CelebA dataset',
                         default=['Pseudo'])
+    parser.add_argument('--selected_clusters', nargs='+', help='selected clusters for training', default=[])
 
     # Test configuration.
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
-    parser.add_argument('--selected_labels', nargs='+', type=int, default=[0, 1, 2, 3, 4], help='selected labels to generate')
+    parser.add_argument('--selected_labels', nargs='+', type=int, default=[0, 1, 2, 3, 4],
+                        help='selected labels to generate')
 
     # Miscellaneous.
     parser.add_argument('--num_workers', type=int, default=1)
