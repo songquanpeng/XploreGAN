@@ -250,8 +250,11 @@ class Solver(object):
             self.d_optimizer.step()
 
             # Logging.
-            loss = {'D/loss_real': d_loss_real.item(), 'D/loss_fake': d_loss_fake.item(),
-                    'D/loss_cls': d_loss_cls.item(), 'D/loss_gp': d_loss_gp.item()}
+            loss = {'D/loss': d_loss.item(),
+                    'D/loss_real': d_loss_real.item(),
+                    'D/loss_fake': d_loss_fake.item(),
+                    'D/loss_cls': d_loss_cls.item(),
+                    'D/loss_gp': d_loss_gp.item()}
 
             # =================================================================================== #
             #                               3. Train the generator                                #
@@ -278,6 +281,7 @@ class Solver(object):
                 self.g_optimizer.step()
 
                 # Logging.
+                loss['G/loss'] = g_loss.item()
                 loss['G/loss_fake'] = g_loss_fake.item()
                 loss['G/loss_rec'] = g_loss_rec.item()
                 loss['G/loss_cls'] = g_loss_cls.item()
