@@ -74,7 +74,8 @@ class Solver(object):
         self.celeba_loader = celeba_loader
 
         # Model configurations.
-        self.c_dim = config.c_dim  # the domain number
+        # self.c_dim = config.c_dim  # the domain number
+        self.c_dim = len(config.selected_clusters_train)
         self.c2_dim = config.c2_dim
         self.image_size = config.image_size
         self.g_conv_dim = config.g_conv_dim
@@ -121,9 +122,9 @@ class Solver(object):
 
         self.means, self.stds = get_means_stds(config.cluster_npz_path, self.batch_size, self.device)
 
-        self.selected_labels = config.selected_labels
-        if len(self.selected_labels) == 0:
-            self.selected_labels = [i for i in range(self.means.shape[0])]
+        self.selected_clusters_test = config.selected_clusters_test
+        if len(self.selected_clusters_test) == 0:
+            self.selected_clusters_test = [i for i in range(self.means.shape[0])]
 
         # Create a generator and a discriminator.
         # TODO: fully control the generator's parameters
@@ -184,10 +185,8 @@ class Solver(object):
 
         # Fetch fixed inputs for debugging.
         data_iter = iter(data_loader)
-        x_fixed, label, mean, std = next(data_iter)
+        x_fixed, _, _, _, _ = next(data_iter)
         x_fixed = x_fixed.to(self.device)
-        fixed_mean = mean.to(self.device)
-        fixed_std = std.to(self.device)
 
         # Learning rate cache for decaying.
         g_lr = self.g_lr
@@ -211,10 +210,10 @@ class Solver(object):
             # Fetch real images and labels.
             # TODO: is it okay to iterate data like that?
             try:
-                x_real, label, mean, std = next(data_iter)
+                x_real, _, label, mean, std = next(data_iter)
             except StopIteration:
                 data_iter = iter(data_loader)
-                x_real, label, mean, std = next(data_iter)
+                x_real, _, label, mean, std = next(data_iter)
 
             x_real = x_real.to(self.device)  # Input images.
             label = label2onehot(label, self.c_dim)
@@ -307,8 +306,8 @@ class Solver(object):
             if (i + 1) % self.sample_step == 0:
                 with torch.no_grad():
                     x_fake_list = [x_fixed]
-                    for select_label in self.selected_labels:
-                        mean, std = self.means[select_label], self.stds[select_label]
+                    for select_cluster in self.selected_clusters_test:
+                        mean, std = self.means[select_cluster], self.stds[select_cluster]
                         x_fake, _ = self.G(x_fixed, mean, std)
                         x_fake_list.append(x_fake)
                     x_concat = torch.cat(x_fake_list, dim=3)
@@ -336,10 +335,10 @@ class Solver(object):
         """Translate images using StarGAN trained on a single dataset."""
         for test_iter in self.test_iters:
             # Prepare target dir
-            if len(self.selected_labels) == self.means.shape[0]:
+            if len(self.selected_clusters_test) == self.means.shape[0]:
                 label_str = 'all'
             else:
-                label_str = ' '.join(str(x) for x in self.selected_labels)
+                label_str = ' '.join(str(x) for x in self.selected_clusters_test)
             target_dir = os.path.join(self.result_dir, f"model-{test_iter}", label_str)
             if not os.path.exists(target_dir):
                 os.makedirs(target_dir)
@@ -350,7 +349,7 @@ class Solver(object):
             data_loader = self.celeba_loader
 
             with torch.no_grad():
-                for i, (x_real, label, _, _) in enumerate(data_loader):
+                for i, (x_real, _, _, _, _) in enumerate(data_loader):
 
                     # Prepare input images and target domain labels.
                     x_real = x_real.to(self.device)
@@ -358,8 +357,8 @@ class Solver(object):
                     # Translate images.
                     x_fake_list = [x_real]
 
-                    for select_label in self.selected_labels:
-                        mean, std = self.means[select_label], self.stds[select_label]
+                    for select_cluster in self.selected_clusters_test:
+                        mean, std = self.means[select_cluster], self.stds[select_cluster]
                         x_fake, _ = self.G(x_real, mean, std)
                         x_fake_list.append(x_fake)
 

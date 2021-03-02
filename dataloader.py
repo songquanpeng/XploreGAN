@@ -11,7 +11,7 @@ import numpy as np
 class CelebA(data.Dataset):
     """Dataset class for the CelebA dataset."""
 
-    def __init__(self, cluster_npz_path, dataset_path, transform, mode, selected_clusters=None, seed=None):
+    def __init__(self, cluster_npz_path, dataset_path, transform, mode, selected_clusters_train=None, seed=None):
         """Initialize and preprocess the CelebA dataset."""
         self.transform = transform
         self.mode = mode
@@ -24,7 +24,9 @@ class CelebA(data.Dataset):
         self.image_paths = clusters["image_paths"]
         self.image_paths = [os.path.join(dataset_path, i) for i in self.image_paths]
         self.seed = 2333 if seed is None else seed
-        self.selected_clusters = [] if selected_clusters is None else [int(x) for x in selected_clusters]
+        self.selected_clusters_train = [] if selected_clusters_train is None else [int(x) for x in selected_clusters_train]
+        self.cluster2idx = {}
+        self.idx2cluster = {}
         self.preprocess()
 
         if mode == 'train':
@@ -35,7 +37,11 @@ class CelebA(data.Dataset):
             print(f"Image number for testing: {self.num_images}")
 
     def preprocess(self):
-        if len(self.selected_clusters) == 0:
+        for i, cluster_name in enumerate(self.selected_clusters_train):
+            self.cluster2idx[cluster_name] = i
+            self.idx2cluster[i] = cluster_name
+
+        if len(self.selected_clusters_train) == 0:
             images = [(self.image_paths[i], label, self.centers[label], self.stds[label]) for i, label in
                       enumerate(self.labels)]
             random.seed(self.seed)
@@ -47,24 +53,26 @@ class CelebA(data.Dataset):
             test_images = []
             for i, label in enumerate(self.labels):
                 image = (self.image_paths[i], label, self.centers[label], self.stds[label])
-                if label in self.selected_clusters:
+                if label in self.selected_clusters_train:
                     train_images.append(image)
                 else:
                     test_images.append(image)
             random.seed(self.seed)
             random.shuffle(train_images)
             random.shuffle(test_images)
-            self.test_dataset = train_images
-            self.train_dataset = test_images
+            self.test_dataset = test_images
+            self.train_dataset = train_images
         print('Dataset processed.')
 
     def __getitem__(self, index):
         """Return one image and its corresponding attribute label."""
         dataset = self.train_dataset if self.mode == 'train' else self.test_dataset
-        path, label, center, std = dataset[index]
+        path, cluster, center, std = dataset[index]
         image = Image.open(path)
-        # TODO: is it okay to directly return variables like that?
-        return self.transform(image), label, center, std
+        if self.mode == 'train':
+            return self.transform(image), cluster, self.cluster2idx[cluster], center, std
+        else:
+            return self.transform(image), cluster, -1, center, std
 
     def __len__(self):
         """Return the number of images."""
@@ -72,7 +80,7 @@ class CelebA(data.Dataset):
 
 
 def get_loader(cluster_npz_path, dataset_path, crop_size=178, image_size=128,
-               batch_size=16, dataset='CelebA', mode='train', num_workers=1, selected_clusters=None, seed=None):
+               batch_size=16, dataset='CelebA', mode='train', num_workers=1, selected_clusters_train=None, seed=None):
     """Build and return a data loader."""
     transform = []
     if mode == 'train':
@@ -84,7 +92,7 @@ def get_loader(cluster_npz_path, dataset_path, crop_size=178, image_size=128,
     transform = T.Compose(transform)
 
     if dataset == 'CelebA':
-        dataset = CelebA(cluster_npz_path, dataset_path, transform, mode, selected_clusters, seed)
+        dataset = CelebA(cluster_npz_path, dataset_path, transform, mode, selected_clusters_train, seed)
     # elif dataset == 'RaFD':
     #     dataset = ImageFolder(image_dir, transform)
 
