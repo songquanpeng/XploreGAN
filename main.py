@@ -7,14 +7,6 @@ from torch.backends import cudnn
 
 def main(config):
     cudnn.benchmark = True
-    if not os.path.exists(config.log_dir):
-        os.makedirs(config.log_dir)
-    if not os.path.exists(config.model_save_dir):
-        os.makedirs(config.model_save_dir)
-    if not os.path.exists(config.sample_dir):
-        os.makedirs(config.sample_dir)
-    if not os.path.exists(config.result_dir):
-        os.makedirs(config.result_dir)
 
     # Data loader.
     celeba_loader = get_loader(config.cluster_npz_path, config.dataset_path,
@@ -78,10 +70,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_path', type=str, default='./data/celeba/')
     parser.add_argument('--attr_path', type=str, default='data/celeba/list_attr_celeba.txt')
     parser.add_argument('--rafd_image_dir', type=str, default='data/RaFD/train')
-    parser.add_argument('--log_dir', type=str, default='experiment/logs')
-    parser.add_argument('--model_save_dir', type=str, default='experiment/models')
-    parser.add_argument('--sample_dir', type=str, default='experiment/samples')
-    parser.add_argument('--result_dir', type=str, default='experiment/results')
+    parser.add_argument('--exp_dir', type=str, default='experiment')
 
     # Step size.
     parser.add_argument('--log_step', type=int, default=10)

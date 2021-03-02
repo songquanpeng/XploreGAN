@@ -8,7 +8,7 @@ import numpy as np
 import os
 import time
 import datetime
-from utils import send_message
+from utils import send_message, get_datetime
 
 
 def classification_loss(logit, target, dataset='CelebA'):
@@ -109,10 +109,20 @@ class Solver(object):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         # Directories.
-        self.log_dir = config.log_dir
-        self.sample_dir = config.sample_dir
-        self.model_save_dir = config.model_save_dir
-        self.result_dir = config.result_dir
+        time_str = get_datetime()
+        self.log_dir = os.path.join(config.exp_dir, time_str, "logs")
+        self.sample_dir = os.path.join(config.exp_dir, time_str, "samples")
+        self.model_save_dir = os.path.join(config.exp_dir, time_str, "models")
+        self.result_dir = os.path.join(config.exp_dir, time_str, "results")
+
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
+        if not os.path.exists(self.model_save_dir):
+            os.makedirs(self.model_save_dir)
+        if not os.path.exists(self.sample_dir):
+            os.makedirs(self.sample_dir)
+        if not os.path.exists(self.result_dir):
+            os.makedirs(self.result_dir)
 
         # Step size.
         self.log_step = config.log_step
