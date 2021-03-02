@@ -35,6 +35,8 @@ def main(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--about', type=str, default="", help="About this experiment.")
+
     # Model configuration.
     # parser.add_argument('--c_dim', type=int, default=5, help='dimension of domain labels (1st dataset)')
     parser.add_argument('--c2_dim', type=int, default=8, help='dimension of domain labels (2nd dataset)')
