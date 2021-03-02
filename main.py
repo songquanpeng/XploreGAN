@@ -4,9 +4,18 @@ from solver import Solver
 from dataloader import get_loader
 from torch.backends import cudnn
 from utils import get_datetime
+import json
 
 
 def main(config):
+    # Save config with experiment data.
+    target_dir = os.path.join(config.exp_dir, config.exp_id)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+    with open(os.path.join(target_dir, "config.json"), 'a') as f:
+        print(json.dumps(config.__dict__, sort_keys=True, indent=4), file=f)
+
     cudnn.benchmark = True
 
     # Data loader.
@@ -54,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('--resume_iters', type=int, default=None, help='resume training from this step')
     parser.add_argument('--selected_attrs', '--list', nargs='+', help='selected attributes for the CelebA dataset',
                         default=['Pseudo'])
-    parser.add_argument('--selected_clusters_train', nargs='+', help='selected clusters for training', default=[])
+    parser.add_argument('--selected_clusters_train', nargs='+', type=int, help='selected clusters for training', default=[])
 
     # Test configuration.
     parser.add_argument('--test_iters', nargs='+', type=int, default=[200000], help='test model from this step')

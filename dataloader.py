@@ -24,7 +24,7 @@ class CelebA(data.Dataset):
         self.image_paths = clusters["image_paths"]
         self.image_paths = [os.path.join(dataset_path, i) for i in self.image_paths]
         self.seed = 2333 if seed is None else seed
-        self.selected_clusters_train = [] if selected_clusters_train is None else [int(x) for x in selected_clusters_train]
+        self.selected_clusters_train = [] if selected_clusters_train is None else selected_clusters_train
         self.cluster2idx = {}
         self.idx2cluster = {}
         self.preprocess()
