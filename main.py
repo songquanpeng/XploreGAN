@@ -3,6 +3,7 @@ import argparse
 from solver import Solver
 from dataloader import get_loader
 from torch.backends import cudnn
+from utils import get_datetime
 
 
 def main(config):
@@ -70,7 +71,8 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_path', type=str, default='./data/celeba/')
     parser.add_argument('--attr_path', type=str, default='data/celeba/list_attr_celeba.txt')
     parser.add_argument('--rafd_image_dir', type=str, default='data/RaFD/train')
-    parser.add_argument('--exp_dir', type=str, default='experiment')
+    parser.add_argument('--exp_dir', type=str, default='experiments')
+    parser.add_argument('--exp_id', type=str, default=get_datetime(), help="experiment id")
 
     # Step size.
     parser.add_argument('--log_step', type=int, default=10)

@@ -46,7 +46,7 @@ python ./scripts/inspect_labels.py
 ./scripts/train.sh
 
 # Resume training
-./scripts/resume.sh 10000
+./scripts/resume.sh 2021-03-02_16-55-25 10000
 
 # Test with the CelebA dataset
 ./scripts/test.sh
