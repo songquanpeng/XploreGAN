@@ -147,6 +147,8 @@ class Solver(object):
             from logger import Logger
             self.logger = Logger(self.log_dir)
 
+        self.loss_type = config.loss_type
+
     def restore_model(self, resume_iters):
         """Restore the trained generator and discriminator."""
         print('Loading the trained models from step {}...'.format(resume_iters), end=' ')
@@ -240,13 +242,19 @@ class Solver(object):
             # Compute loss with real images.
             # (batch_size, 1, image_size/conv_dim, image_size/conv_dim), (batch_size, c_dim)
             out_src, out_cls = self.D(x_real)
-            d_loss_real = - torch.mean(out_src)
+            if self.loss_type == "mean":
+                # StarGAN use this.
+                d_loss_real = - torch.mean(out_src)
+            else:
+                d_loss_real = torch.mean(F.relu(1. - out_src))
             d_loss_cls = self.classification_loss(out_cls, label)
 
             # Compute loss with fake images.
             x_fake, _ = self.G(x_real, mean, std)
             out_src, out_cls = self.D(x_fake.detach())
-            d_loss_fake = torch.mean(out_src)
+            # d_loss_fake = torch.mean(out_src)
+            d_loss_fake = torch.mean(F.relu(1. + out_src))
+
 
             # Compute loss for gradient penalty.
             alpha = torch.rand(x_real.size(0), 1, 1, 1).to(self.device)
@@ -275,7 +283,13 @@ class Solver(object):
                 # Original-to-target domain.
                 x_fake, h_x_real = self.G(x_real, mean, std)
                 out_src, out_cls = self.D(x_fake)
-                g_loss_fake = - torch.mean(out_src)
+                if self.loss_type == "mean" or self.loss_type == "g_mean_d_hinge":
+                    # StarGAN use this.
+                    g_loss_fake = - torch.mean(out_src)
+                else:
+                    # Hinge loss:
+                    g_loss_fake = torch.mean(F.relu(1. - out_src))
+
                 g_loss_cls = self.classification_loss(out_cls, label)
 
                 # Target-to-original domain.

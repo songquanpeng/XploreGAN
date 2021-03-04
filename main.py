@@ -66,6 +66,7 @@ if __name__ == '__main__':
     parser.add_argument('--selected_attrs', '--list', nargs='+', help='selected attributes for the CelebA dataset',
                         default=['Pseudo'])
     parser.add_argument('--selected_clusters_train', nargs='+', type=int, help='selected clusters for training', default=[])
+    parser.add_argument('--loss_type', type=str, default='hinge', choices=['mean', 'hinge', 'g_mean_d_hinge'])
 
     # Test configuration.
     parser.add_argument('--test_iters', nargs='+', type=int, default=[200000], help='test model from this step')
