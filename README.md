@@ -50,6 +50,9 @@ python ./scripts/inspect_labels.py
 
 # Test with the CelebA dataset
 ./scripts/test.sh
+
+# Use tensorboard:
+tensorboard --logdir=./logs --bind_all
 ```
 
 

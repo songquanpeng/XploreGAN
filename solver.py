@@ -11,14 +11,6 @@ import datetime
 from utils import send_message
 
 
-def classification_loss(logit, target, dataset='CelebA'):
-    """Compute binary or softmax cross entropy loss."""
-    if dataset == 'CelebA':
-        return F.binary_cross_entropy_with_logits(logit, target, size_average=False) / logit.size(0)
-    elif dataset == 'RaFD':
-        return F.cross_entropy(logit, target)
-
-
 def print_network(model, name):
     """Print out the network information."""
     num_params = 0
@@ -135,6 +127,9 @@ class Solver(object):
         if len(self.selected_clusters_test) == 0:
             self.selected_clusters_test = [i for i in range(self.means.shape[0])]
 
+        # Classification loss
+        self.pos_weight = torch.ones([self.c_dim], device=self.device) * self.c_dim
+
         # Create a generator and a discriminator.
         # TODO: fully control the generator's parameters
         self.G = Generator(self.g_conv_dim, self.g_repeat_num)
@@ -187,6 +182,14 @@ class Solver(object):
         dydx_l2norm = torch.sqrt(torch.sum(dydx ** 2, dim=1))
         return torch.mean((dydx_l2norm - 1) ** 2)
 
+    def classification_loss(self, logit, target):
+        """Compute binary or softmax cross entropy loss."""
+        if self.dataset == 'CelebA':
+            return F.binary_cross_entropy_with_logits(logit, target, size_average=False,
+                                                      pos_weight=self.pos_weight) / logit.size(0)
+        elif self.dataset == 'RaFD':
+            return F.cross_entropy(logit, target)
+
     def train(self):
         """Train StarGAN within a single dataset."""
         # Set data loader.
@@ -238,7 +241,7 @@ class Solver(object):
             # (batch_size, 1, image_size/conv_dim, image_size/conv_dim), (batch_size, c_dim)
             out_src, out_cls = self.D(x_real)
             d_loss_real = - torch.mean(out_src)
-            d_loss_cls = classification_loss(out_cls, label, self.dataset)
+            d_loss_cls = self.classification_loss(out_cls, label)
 
             # Compute loss with fake images.
             x_fake, _ = self.G(x_real, mean, std)
@@ -273,7 +276,7 @@ class Solver(object):
                 x_fake, h_x_real = self.G(x_real, mean, std)
                 out_src, out_cls = self.D(x_fake)
                 g_loss_fake = - torch.mean(out_src)
-                g_loss_cls = classification_loss(out_cls, label, self.dataset)
+                g_loss_cls = self.classification_loss(out_cls, label)
 
                 # Target-to-original domain.
                 x_reconst, h_x_fake = self.G(x_fake, mean, std)
