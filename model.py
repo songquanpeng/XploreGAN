@@ -4,19 +4,35 @@ import torch.nn.functional as F
 import numpy as np
 from ASIN import attribute_summary_instance_normalization as ASIN
 from layers import NoiseLayer
+from spectral_normalization import SpectralNorm
 
 
 class ResidualBlock(nn.Module):
     """Residual Block with instance normalization."""
 
-    def __init__(self, dim_in, dim_out):
+    def __init__(self, dim_in, dim_out, mode="encoder"):
         super(ResidualBlock, self).__init__()
-        self.main = nn.Sequential(
-            nn.Conv2d(dim_in, dim_out, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.InstanceNorm2d(dim_out, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(dim_out, dim_out, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.InstanceNorm2d(dim_out, affine=True, track_running_stats=True))
+        # StarGAN's design:
+        # self.main = nn.Sequential(
+        #     nn.Conv2d(dim_in, dim_out, kernel_size=3, stride=1, padding=1, bias=False),
+        #     nn.InstanceNorm2d(dim_out, affine=True, track_running_stats=True),
+        #     nn.ReLU(inplace=True),
+        #     nn.Conv2d(dim_out, dim_out, kernel_size=3, stride=1, padding=1, bias=False),
+        #     nn.InstanceNorm2d(dim_out, affine=True, track_running_stats=True))
+
+        if mode == "encoder":
+            self.main = nn.Sequential(
+                SpectralNorm(nn.Conv2d(dim_in, dim_out, kernel_size=3, stride=1, padding=1, bias=False)),
+                nn.ReLU(inplace=True),
+                SpectralNorm(nn.Conv2d(dim_out, dim_out, kernel_size=3, stride=1, padding=1, bias=False)))
+        else:
+            # Add per pixel noise after each convolutional layer.
+            self.main = nn.Sequential(
+                nn.Conv2d(dim_in, dim_out, kernel_size=3, stride=1, padding=1, bias=False),
+                NoiseLayer(dim_out),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(dim_out, dim_out, kernel_size=3, stride=1, padding=1, bias=False),
+                NoiseLayer(dim_out))
 
     def forward(self, x):
         return x + self.main(x)
@@ -55,7 +71,14 @@ class Generator(nn.Module):
         self.mlp = nn.Sequential(*layers)
 
         # Encoder part.
+        """
+        Adapted from StarGAN [4], our encoder
+        has two convolutional layers for downsampling followed
+        by six residual blocks [14] with spectral normalization
+        [28].
+        """
         layers = []
+        # TODO: Try to remove those three lines
         layers.append(nn.Conv2d(3, conv_dim, kernel_size=7, stride=1, padding=3, bias=False))
         layers.append(nn.InstanceNorm2d(conv_dim, affine=True, track_running_stats=True))
         layers.append(nn.ReLU(inplace=True))
@@ -71,23 +94,30 @@ class Generator(nn.Module):
 
         # Bottleneck layers.
         for i in range(repeat_num):
-            layers.append(ResidualBlock(dim_in=curr_dim, dim_out=curr_dim))
+            layers.append(ResidualBlock(dim_in=curr_dim, dim_out=curr_dim, mode="encoder"))
         self.encoder = nn.Sequential(*layers)
+
+        """
+        Our decoder has six residual blocks with attribute
+        summary instance normalization (ASIN), with per pixel
+        noise [21] added after each convolutional layer.
+        """
 
         # Decoder part 1.
         self.decoder_residual_blocks = nn.ModuleList()
         # TODO: Six residual blocks with attribute summary instance normalization (ASIN).
         for i in range(repeat_num):
-            self.decoder_residual_blocks.append(ResidualBlock(dim_in=curr_dim, dim_out=curr_dim))
+            self.decoder_residual_blocks.append(ResidualBlock(dim_in=curr_dim, dim_out=curr_dim,  mode="decoder"))
 
+        """
+        It is followed by two transposed convolutional layers for upsampling.
+        """
         # Decoder part 2.
         layers = []
         # Up-sampling layers.
         for i in range(2):
             layers.append(nn.ConvTranspose2d(curr_dim, curr_dim // 2, kernel_size=4, stride=2, padding=1, bias=False))
-            # layers.append(nn.InstanceNorm2d(curr_dim // 2, affine=True, track_running_stats=True))
-            # Add per pixel noise after each convolutional layer.
-            layers.append(NoiseLayer(curr_dim // 2))
+            layers.append(nn.InstanceNorm2d(curr_dim // 2, affine=True, track_running_stats=True))
             layers.append(nn.ReLU(inplace=True))
             curr_dim = curr_dim // 2
 
