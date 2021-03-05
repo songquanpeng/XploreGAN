@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from ASIN import attribute_summary_instance_normalization as ASIN
+from layers import NoiseLayer
 
 
 class ResidualBlock(nn.Module):
@@ -83,9 +84,10 @@ class Generator(nn.Module):
         layers = []
         # Up-sampling layers.
         for i in range(2):
-            # TODO: Add per pixel noise after each convolutional layer.
             layers.append(nn.ConvTranspose2d(curr_dim, curr_dim // 2, kernel_size=4, stride=2, padding=1, bias=False))
-            layers.append(nn.InstanceNorm2d(curr_dim // 2, affine=True, track_running_stats=True))
+            # layers.append(nn.InstanceNorm2d(curr_dim // 2, affine=True, track_running_stats=True))
+            # Add per pixel noise after each convolutional layer.
+            layers.append(NoiseLayer(curr_dim // 2))
             layers.append(nn.ReLU(inplace=True))
             curr_dim = curr_dim // 2
 
