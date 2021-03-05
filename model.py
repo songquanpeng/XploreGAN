@@ -51,7 +51,7 @@ class Generator(nn.Module):
     generation performance on fine, stochastic details of the image.
     """
 
-    def __init__(self, conv_dim=64, repeat_num=6, pca_dim=256, mlp_layer_num=3, mlp_neurons_num=256):
+    def __init__(self, conv_dim=64, repeat_num=6, pca_dim=256, mlp_layer_num=3, mlp_neurons_num=2 * 256):
         super(Generator, self).__init__()
 
         # MLP part.
@@ -107,7 +107,7 @@ class Generator(nn.Module):
         self.decoder_residual_blocks = nn.ModuleList()
         # TODO: Six residual blocks with attribute summary instance normalization (ASIN).
         for i in range(repeat_num):
-            self.decoder_residual_blocks.append(ResidualBlock(dim_in=curr_dim, dim_out=curr_dim,  mode="decoder"))
+            self.decoder_residual_blocks.append(ResidualBlock(dim_in=curr_dim, dim_out=curr_dim, mode="decoder"))
 
         """
         It is followed by two transposed convolutional layers for upsampling.
